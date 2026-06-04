@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="구매전략지표">
+<meta name="theme-color" content="#00b8a9">
+<title>동부계약관리팀 · 구매전략지표</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --mint:#00b8a9;--mint-dark:#009e91;--mint-light:#e6f9f7;--mint-mid:#b3ede9;
+  --bg:#f5f6fa;--card:#fff;--border:#e8eaed;
+  --text:#1a1a2e;--text2:#6b7280;--text3:#9ca3af;
+  --red:#ef4444;--red-bg:#fef2f2;
+  --blue:#3b82f6;--blue-bg:#eff6ff;
+  --amber:#f59e0b;--amber-bg:#fffbeb;
+  --green:#10b981;--green-bg:#ecfdf5;
+  --shadow:0 2px 8px rgba(0,0,0,.08);
+  --radius:12px;--radius-sm:8px;
+  --tab-h:64px;--header-h:56px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;font-size:14px;line-height:1.5}
+/* ── 헤더 ── */
+.app-header{position:fixed;top:0;left:0;right:0;height:var(--header-h);background:var(--text);display:flex;align-items:center;padding:0 16px;gap:12px;z-index:100;padding-top:env(safe-area-inset-top)}
+.app-header .logo{width:28px;height:28px;background:var(--mint);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.app-header .title-wrap{}
+.app-header .title{color:#fff;font-size:15px;font-weight:700;letter-spacing:-.3px}
+.app-header .sub{color:rgba(255,255,255,.55);font-size:11px}
+.app-header .nav-links{margin-left:auto;display:flex;gap:8px}
+.app-header .nav-link{color:rgba(255,255,255,.6);font-size:11px;text-decoration:none;padding:4px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);transition:.15s}
+.app-header .nav-link:hover{color:#fff;border-color:rgba(255,255,255,.4)}
+/* ── 반영 배너 ── */
+.reflect-banner{position:fixed;top:var(--header-h);left:0;right:0;background:var(--mint);color:#fff;padding:10px 16px;display:none;align-items:center;gap:10px;z-index:99;font-size:13px;font-weight:600}
+.reflect-banner.show{display:flex}
+.reflect-banner .cnt{background:rgba(255,255,255,.25);border-radius:20px;padding:2px 8px;font-size:12px}
+.reflect-banner .btn-reflect{margin-left:auto;background:#fff;color:var(--mint);border:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer}
+.reflect-banner .btn-close{background:none;border:none;color:rgba(255,255,255,.7);font-size:18px;cursor:pointer;padding:0 4px}
+/* ── 메인 콘텐츠 ── */
+.main{padding-top:calc(var(--header-h) + env(safe-area-inset-top));padding-bottom:calc(var(--tab-h) + env(safe-area-inset-bottom));min-height:100%}
+/* ── 탭 ── */
+.tab-bar{position:fixed;bottom:0;left:0;right:0;height:var(--tab-h);background:#fff;border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:100}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--text3);transition:.15s;border:none;background:none;padding:0}
+.tab-item.active{color:var(--mint)}
+.tab-item .tab-icon{font-size:20px;line-height:1}
+.tab-item .tab-label{font-size:10px;font-weight:500}
+/* ── 패널 ── */
+.panel{display:none;padding:16px;gap:12px;flex-direction:column}
+.panel.active{display:flex}
+/* ── 카드 ── */
+.card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.card-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.card-title .icon{font-size:16px}
+/* ── KPI 그리드 ── */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi-card{background:var(--card);border-radius:var(--radius-sm);padding:14px;box-shadow:var(--shadow)}
+.kpi-card .kpi-label{font-size:11px;color:var(--text2);margin-bottom:4px}
+.kpi-card .kpi-value{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.5px}
+.kpi-card .kpi-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.kpi-card.accent{background:var(--mint);color:#fff}
+.kpi-card.accent .kpi-label{color:rgba(255,255,255,.75)}
+.kpi-card.accent .kpi-value{color:#fff}
+.kpi-card.accent .kpi-sub{color:rgba(255,255,255,.6)}
+/* ── 업로드 스텝 ── */
+.step-card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.step-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.step-num{width:26px;height:26px;background:var(--mint);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.step-title{font-size:14px;font-weight:700}
+/* ── 지사 선택 ── */
+.branch-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.branch-btn{padding:12px;border:2px solid var(--border);border-radius:var(--radius-sm);background:#fff;cursor:pointer;text-align:center;font-size:13px;font-weight:600;color:var(--text2);transition:.15s}
+.branch-btn.active{border-color:var(--mint);background:var(--mint-light);color:var(--mint-dark)}
+/* ── 연월 선택 ── */
+.date-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.date-row select{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:#fff;color:var(--text);appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+/* ── 파일 업로드 ── */
+.upload-zone{border:2px dashed var(--mint-mid);border-radius:var(--radius-sm);padding:28px 16px;text-align:center;cursor:pointer;transition:.15s;background:var(--mint-light)}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--mint);background:#d4f4f1}
+.upload-zone .uz-icon{font-size:36px;margin-bottom:8px}
+.upload-zone p{font-size:13px;font-weight:600;color:var(--mint-dark);margin-bottom:4px}
+.upload-zone small{font-size:11px;color:var(--text2)}
+.file-info{display:none;align-items:center;gap:10px;padding:10px 12px;background:var(--mint-light);border-radius:var(--radius-sm);border:1.5px solid var(--mint-mid)}
+.file-info.show{display:flex}
+.file-info .fi-icon{font-size:20px}
+.file-info .fi-name{flex:1;font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-info .fi-size{font-size:11px;color:var(--text2)}
+.file-info .fi-del{background:none;border:none;cursor:pointer;font-size:16px;color:var(--text3);padding:4px}
+/* ── 진행 상황 ── */
+.progress-steps{display:flex;flex-direction:column;gap:8px}
+.prog-step{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);background:var(--bg);transition:.3s}
+.prog-step.active{background:var(--blue-bg)}
+.prog-step.done{background:var(--green-bg)}
+.prog-step.error{background:var(--red-bg)}
+.prog-dot{width:24px;height:24px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;transition:.3s}
+.prog-step.active .prog-dot{background:var(--blue)}
+.prog-step.done .prog-dot{background:var(--green)}
+.prog-step.error .prog-dot{background:var(--red)}
+.prog-label{font-size:13px;font-weight:600}
+.prog-step.active .prog-label{color:var(--blue)}
+.prog-step.done .prog-label{color:var(--green)}
+.prog-step.error .prog-label{color:var(--red)}
+.prog-desc{font-size:11px;color:var(--text3);margin-left:auto}
+/* ── 매핑 결과 ── */
+.mapping-result{display:none}
+.mapping-result.show{display:block}
+.mapping-table{width:100%;border-collapse:collapse;font-size:12px}
+.mapping-table th{padding:7px 10px;background:var(--bg);font-weight:600;color:var(--text2);text-align:left;border-bottom:1px solid var(--border)}
+.mapping-table td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text)}
+.mapping-table tr:last-child td{border-bottom:none}
+.badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-mint{background:var(--mint-light);color:var(--mint-dark)}
+.badge-blue{background:var(--blue-bg);color:var(--blue)}
+.badge-amber{background:var(--amber-bg);color:var(--amber)}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+/* ── 미리보기 테이블 ── */
+.preview-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.data-table{width:100%;border-collapse:collapse;font-size:11px;min-width:700px}
+.data-table th{padding:8px 10px;background:var(--text);color:#fff;font-weight:600;text-align:left;white-space:nowrap;position:sticky;top:0}
+.data-table td{padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap;color:var(--text)}
+.data-table tr:hover td{background:var(--mint-light)}
+.data-table .num{text-align:right;font-variant-numeric:tabular-nums}
+.data-table .del-btn{background:var(--red-bg);border:none;color:var(--red);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer}
+/* ── 집계 테이블 ── */
+.agg-table{width:100%;border-collapse:collapse;font-size:12px}
+.agg-table th{padding:9px 10px;background:var(--bg);font-weight:600;color:var(--text2);text-align:left;border-bottom:2px solid var(--border);white-space:nowrap}
+.agg-table td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--text)}
+.agg-table tr:last-child td{border-bottom:none;font-weight:700;background:var(--mint-light)}
+.agg-table .num{text-align:right;font-variant-numeric:tabular-nums}
+.agg-table tbody tr:hover td{background:var(--bg)}
+/* ── 차트 ── */
+.chart-wrap{position:relative;width:100%}
+/* ── 필터 바 ── */
+.filter-bar{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.filter-bar::-webkit-scrollbar{display:none}
+.filter-sel{padding:7px 10px;border:1.5px solid var(--border);border-radius:20px;font-size:12px;background:#fff;color:var(--text);white-space:nowrap;appearance:none;-webkit-appearance:none;padding-right:22px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;flex-shrink:0}
+/* ── 버튼 ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;border:none;transition:.15s;width:100%}
+.btn-primary{background:var(--mint);color:#fff}
+.btn-primary:hover{background:var(--mint-dark)}
+.btn-primary:disabled{background:var(--border);color:var(--text3);cursor:not-allowed}
+.btn-secondary{background:var(--bg);color:var(--text);border:1.5px solid var(--border)}
+.btn-sm{padding:7px 14px;font-size:12px;width:auto;border-radius:20px}
+/* ── 빈 상태 ── */
+.empty{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty .empty-icon{font-size:40px;margin-bottom:12px}
+.empty p{font-size:13px}
+/* ── 섹션 소제목 ── */
+.section-label{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;padding:0 4px}
+/* ── 토스트 ── */
+.toast{position:fixed;bottom:calc(var(--tab-h) + 12px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:.3s;white-space:nowrap;z-index:200;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* ── 그룹 탭 ── */
+.group-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.group-tabs::-webkit-scrollbar{display:none}
+.group-tab{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;white-space:nowrap;transition:.15s;flex-shrink:0}
+.group-tab.active{background:var(--mint);border-color:var(--mint);color:#fff}
+/* ── 누계 테이블 ── */
+.cumul-highlight{color:var(--mint-dark);font-weight:700}
+/* ── 반응형 ── */
+@media(min-width:640px){.main{max-width:640px;margin:0 auto}.tab-bar{max-width:640px;left:50%;transform:translateX(-50%)}.app-header{max-width:640px;left:50%;transform:translateX(-50%)}.reflect-banner{max-width:640px;left:50%;transform:translateX(-50%)}}
+</style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<header class="app-header">
+  <div class="logo">📊</div>
+  <div class="title-wrap">
+    <div class="title">구매전략지표</div>
+    <div class="sub">동부계약관리팀 · 하불내역 분석</div>
+  </div>
+  <div class="nav-links">
+    <a class="nav-link" href="https://lastdq0911-star.github.io/safety-repository/" target="_blank">안전운임</a>
+    <a class="nav-link" href="https://lastdq0911-star.github.io/dongbu-contract-performance/" target="_blank">하불실적</a>
+  </div>
+</header>
+
+<!-- 반영 배너 -->
+<div class="reflect-banner" id="reflectBanner">
+  <span>✅ 변환 완료 — 대시보드에 반영할까요?</span>
+  <span class="cnt" id="bannerCnt">0건</span>
+  <button class="btn-reflect" onclick="reflectData()">반영하기 →</button>
+  <button class="btn-close" onclick="closeBanner()">✕</button>
+</div>
+
+<!-- 메인 -->
+<main class="main">
+
+  <!-- ① 대시보드 -->
+  <div class="panel active" id="panel-dash">
+    <div class="kpi-grid" id="kpiGrid">
+      <div class="kpi-card accent">
+        <div class="kpi-label">총 데이터</div>
+        <div class="kpi-value" id="kpi-total">0건</div>
+        <div class="kpi-sub" id="kpi-period">데이터 없음</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">총 하불액</div>
+        <div class="kpi-value" id="kpi-habul">—</div>
+        <div class="kpi-sub" id="kpi-habul-sub">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">총 청구액</div>
+        <div class="kpi-value" id="kpi-charge">—</div>
+        <div class="kpi-sub">매출 기준</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">하불률</div>
+        <div class="kpi-value" id="kpi-ratio">—</div>
+        <div class="kpi-sub">하불/청구</div>
+      </div>
+    </div>
+
+    <div class="card" id="dashEmpty" style="display:block">
+      <div class="empty">
+        <div class="empty-icon">📊</div>
+        <p>데이터를 업로드하면 현황이 표시됩니다</p>
+      </div>
+    </div>
+
+    <div id="dashContent" style="display:none;display:flex;flex-direction:column;gap:12px">
+      <div class="card">
+        <div class="card-title"><span class="icon">📈</span>월별 하불 추이</div>
+        <div class="chart-wrap" style="height:200px"><canvas id="chartMonth" role="img" aria-label="월별 청구 및 하불액 추이"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">🏢</span>하불 상위 협력사 TOP 10</div>
+        <div class="chart-wrap" style="height:220px"><canvas id="chartPartner" role="img" aria-label="협력사별 하불액 상위 10"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">👤</span>화주 상위 협력사 TOP 10</div>
+        <div class="chart-wrap" style="height:220px"><canvas id="chartCustomer" role="img" aria-label="화주별 하불액 상위 10"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 업로드 -->
+  <div class="panel" id="panel-upload">
+    <!-- STEP 1 지사 선택 -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <div class="step-title">지사 선택</div>
+      </div>
+      <div class="branch-grid">
+        <button class="branch-btn" data-branch="부산지사" onclick="selectBranch(this)">📍 부산지사</button>
+        <button class="branch-btn" data-branch="울산지사" onclick="selectBranch(this)">📍 울산지사</button>
+        <button class="branch-btn" data-branch="경북지사" onclick="selectBranch(this)">📍 경북지사</button>
+        <button class="branch-btn" data-branch="강원지사" onclick="selectBranch(this)">📍 강원지사</button>
+      </div>
+    </div>
+
+    <!-- STEP 2 연월 -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">2</div>
+        <div class="step-title">기준 연월</div>
+      </div>
+      <div class="date-row">
+        <select id="selYear">
+          <option value="">연도</option>
+          <option value="2026">2026년</option>
+          <option value="2025">2025년</option>
+          <option value="2024">2024년</option>
+        </select>
+        <select id="selMonth">
+          <option value="">월</option>
+          <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option>
+          <option value="4">4월</option><option value="5">5월</option><option value="6">6월</option>
+          <option value="7">7월</option><option value="8">8월</option><option value="9">9월</option>
+          <option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- STEP 3 파일 -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">3</div>
+        <div class="step-title">하불내역 파일 <span style="font-size:11px;color:var(--text2);font-weight:400">.xlsx / .xls</span></div>
+      </div>
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()"
+           ondragover="event.preventDefault();this.classList.add('drag')"
+           ondragleave="this.classList.remove('drag')"
+           ondrop="handleDrop(event)">
+        <input type="file" id="fileInput" accept=".xls,.xlsx" style="display:none" onchange="handleFile(this.files[0])">
+        <div class="uz-icon">📂</div>
+        <p><strong>클릭 또는 드래그</strong>하여 파일 선택</p>
+        <small>.xlsx / .xls 하불내역 파일</small>
+      </div>
+      <div class="file-info" id="fileInfo">
+        <span class="fi-icon">📄</span>
+        <span class="fi-name" id="fiName">—</span>
+        <span class="fi-size" id="fiSize">—</span>
+        <button class="fi-del" onclick="clearFile()">✕</button>
+      </div>
+    </div>
+
+    <!-- STEP 4 분석 버튼 -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">4</div>
+        <div class="step-title">데이터 추출 시작</div>
+      </div>
+      <button class="btn btn-primary" id="btnAnalyze" onclick="startAnalysis()" disabled>
+        🔍 노란색 컬럼 추출 시작
+      </button>
+    </div>
+
+    <!-- 진행 상황 -->
+    <div class="step-card" id="progressCard" style="display:none">
+      <div class="card-title"><span class="icon">⚙️</span>진행 상황</div>
+      <div class="progress-steps">
+        <div class="prog-step" id="prog1">
+          <div class="prog-dot">1</div>
+          <div class="prog-label">파일 읽기</div>
+          <div class="prog-desc" id="progDesc1">대기 중</div>
+        </div>
+        <div class="prog-step" id="prog2">
+          <div class="prog-dot">2</div>
+          <div class="prog-label">노란색 컬럼 추출</div>
+          <div class="prog-desc" id="progDesc2">대기 중</div>
+        </div>
+        <div class="prog-step" id="prog3">
+          <div class="prog-dot">3</div>
+          <div class="prog-label">데이터 정제</div>
+          <div class="prog-desc" id="progDesc3">대기 중</div>
+        </div>
+        <div class="prog-step" id="prog4">
+          <div class="prog-dot">4</div>
+          <div class="prog-label">집계 준비</div>
+          <div class="prog-desc" id="progDesc4">대기 중</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 매핑 결과 -->
+    <div class="step-card mapping-result" id="mappingResult">
+      <div class="card-title"><span class="icon">🔗</span>추출 컬럼 확인</div>
+      <div class="preview-wrap">
+        <table class="mapping-table">
+          <thead><tr><th>추출 컬럼</th><th>내용</th><th>상태</th></tr></thead>
+          <tbody id="mappingBody"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
+        <div style="flex:1">
+          <div style="font-size:12px;color:var(--text2)">추출 건수</div>
+          <div style="font-size:20px;font-weight:700;color:var(--text)" id="extractCnt">0건</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--text2)">총 청구액</div>
+          <div style="font-size:14px;font-weight:700;color:var(--mint)" id="extractCharge">—</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">총 하불액</div>
+          <div style="font-size:14px;font-weight:700;color:var(--text)" id="extractHabul">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 미리보기 -->
+    <div class="step-card mapping-result" id="previewCard">
+      <div class="card-title" style="justify-content:space-between">
+        <span><span class="icon">👁</span> 변환 결과 미리보기</span>
+        <span style="font-size:11px;color:var(--text3)" id="previewNote">상위 20건</span>
+      </div>
+      <div class="preview-wrap">
+        <table class="data-table" id="previewTable"></table>
+      </div>
+      <div style="margin-top:12px">
+        <button class="btn btn-primary" onclick="reflectData()">✅ 실적관리에 반영하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 구매전략지표 -->
+  <div class="panel" id="panel-strategy">
+    <div class="filter-bar">
+      <select class="filter-sel" id="sf-branch" onchange="renderStrategy()">
+        <option value="">전체 지사</option>
+        <option>부산지사</option><option>울산지사</option><option>경북지사</option><option>강원지사</option>
+      </select>
+      <select class="filter-sel" id="sf-year" onchange="renderStrategy()">
+        <option value="">전체 연도</option>
+        <option>2026</option><option>2025</option><option>2024</option>
+      </select>
+      <select class="filter-sel" id="sf-month" onchange="renderStrategy()">
+        <option value="">전체 월</option>
+        <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option>
+        <option value="4">4월</option><option value="5">5월</option><option value="6">6월</option>
+        <option value="7">7월</option><option value="8">8월</option><option value="9">9월</option>
+        <option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
+      </select>
+    </div>
+
+    <div class="group-tabs">
+      <button class="group-tab active" data-group="partner" onclick="setStrategyGroup(this)">협력사별</button>
+      <button class="group-tab" data-group="customer" onclick="setStrategyGroup(this)">화주별</button>
+      <button class="group-tab" data-group="service" onclick="setStrategyGroup(this)">용역별</button>
+      <button class="group-tab" data-group="ton" onclick="setStrategyGroup(this)">톤급별</button>
+    </div>
+
+    <div class="card" id="strategyEmpty">
+      <div class="empty"><div class="empty-icon">📋</div><p>데이터를 업로드하면 집계표가 표시됩니다</p></div>
+    </div>
+
+    <div id="strategyContent" style="display:none;flex-direction:column;gap:12px">
+      <div class="card">
+        <div class="card-title" id="strategyTitle"><span class="icon">📋</span>협력사별 구매전략지표</div>
+        <div class="preview-wrap">
+          <table class="agg-table" id="strategyTable"></table>
+        </div>
+      </div>
+      <button class="btn btn-secondary" onclick="exportStrategyCSV()">⬇ 구매전략지표 CSV 내보내기</button>
+    </div>
+  </div>
+
+  <!-- ④ 누계·분석 -->
+  <div class="panel" id="panel-cumul">
+    <div class="filter-bar">
+      <select class="filter-sel" id="cf-branch" onchange="renderCumul()">
+        <option value="">전체 지사</option>
+        <option>부산지사</option><option>울산지사</option><option>경북지사</option><option>강원지사</option>
+      </select>
+      <select class="filter-sel" id="cf-partner" onchange="renderCumul()">
+        <option value="">전체 협력사</option>
+      </select>
+      <select class="filter-sel" id="cf-customer" onchange="renderCumul()">
+        <option value="">전체 화주</option>
+      </select>
+    </div>
+
+    <div class="kpi-grid" id="cumulKpi">
+      <div class="kpi-card accent">
+        <div class="kpi-label">누계 하불액</div>
+        <div class="kpi-value" id="ck-habul">—</div>
+        <div class="kpi-sub" id="ck-period">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">누계 청구액</div>
+        <div class="kpi-value" id="ck-charge">—</div>
+        <div class="kpi-sub">매출 기준</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">월 평균 하불</div>
+        <div class="kpi-value" id="ck-avg">—</div>
+        <div class="kpi-sub" id="ck-months">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">평균 하불률</div>
+        <div class="kpi-value" id="ck-ratio">—</div>
+        <div class="kpi-sub">하불/청구</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📈</span>월별 추이</div>
+      <div class="chart-wrap" style="height:190px"><canvas id="chartCumul" role="img" aria-label="월별 청구 하불 추이"></canvas></div>
+    </div>
+
+    <div class="card" id="cumulEmpty" style="display:none">
+      <div class="empty"><div class="empty-icon">📈</div><p>데이터를 업로드하면 누계 분석이 표시됩니다</p></div>
+    </div>
+
+    <div id="cumulContent" style="display:none;flex-direction:column;gap:12px">
+      <div class="card">
+        <div class="card-title"><span class="icon">📅</span>월별 누계 상세</div>
+        <div class="preview-wrap">
+          <table class="agg-table" id="cumulTable"></table>
+        </div>
+      </div>
+      <button class="btn btn-secondary" onclick="exportCumulCSV()">⬇ 누계 분석 CSV 내보내기</button>
+    </div>
+  </div>
+
+  <!-- ⑤ 전체 데이터 -->
+  <div class="panel" id="panel-data">
+    <div class="filter-bar">
+      <select class="filter-sel" id="df-branch" onchange="renderAllData()">
+        <option value="">전체 지사</option>
+        <option>부산지사</option><option>울산지사</option><option>경북지사</option><option>강원지사</option>
+      </select>
+      <select class="filter-sel" id="df-year" onchange="renderAllData()">
+        <option value="">전체 연도</option>
+        <option>2026</option><option>2025</option>
+      </select>
+      <select class="filter-sel" id="df-month" onchange="renderAllData()">
+        <option value="">전체 월</option>
+        <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option>
+        <option value="4">4월</option><option value="5">5월</option><option value="6">6월</option>
+        <option value="7">7월</option><option value="8">8월</option><option value="9">9월</option>
+        <option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
+      </select>
+      <select class="filter-sel" id="df-partner" onchange="renderAllData()">
+        <option value="">전체 협력사</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span style="font-size:12px;color:var(--text2)" id="dataCount">전체 0건</span>
+      <button class="btn btn-secondary btn-sm" onclick="deleteFiltered()">🗑 필터삭제</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportAllCSV()">⬇ 내보내기</button>
+    </div>
+    <div class="card" id="dataEmpty">
+      <div class="empty"><div class="empty-icon">📋</div><p>데이터 없음</p></div>
+    </div>
+    <div class="card" id="dataContent" style="display:none">
+      <div class="preview-wrap">
+        <table class="data-table" id="allDataTable"></table>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- 하단 탭 -->
+<nav class="tab-bar">
+  <button class="tab-item active" onclick="switchTab('dash')">
+    <span class="tab-icon">📊</span>
+    <span class="tab-label">대시보드</span>
+  </button>
+  <button class="tab-item" onclick="switchTab('upload')">
+    <span class="tab-icon">📤</span>
+    <span class="tab-label">업로드</span>
+  </button>
+  <button class="tab-item" onclick="switchTab('strategy')">
+    <span class="tab-icon">📋</span>
+    <span class="tab-label">전략지표</span>
+  </button>
+  <button class="tab-item" onclick="switchTab('cumul')">
+    <span class="tab-icon">📈</span>
+    <span class="tab-label">누계분석</span>
+  </button>
+  <button class="tab-item" onclick="switchTab('data')">
+    <span class="tab-icon">🗂</span>
+    <span class="tab-label">전체데이터</span>
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── 상태 ──
+let allData = [];
+let pendingData = [];
+let selectedBranch = '';
+let selectedFile = null;
+let strategyGroup = 'partner';
+let chartMonth, chartPartner, chartCustomer, chartCumul;
+
+// 노란색 컬럼 정의 (index 기준)
+const YELLOW = [
+  {idx:5,  key:'협력사명'},
+  {idx:8,  key:'톤급'},
+  {idx:16, key:'중량'},
+  {idx:24, key:'청구요율구분'},
+  {idx:27, key:'용역'},
+  {idx:28, key:'청구(원)'},
+  {idx:33, key:'하불(원)'},
+  {idx:40, key:'출발지'},
+  {idx:41, key:'도착지'},
+  {idx:44, key:'S/O명'},
+  {idx:49, key:'고객(화주)'},
+];
+const DATE_IDX = 36; // 하불일자
+
+// ── 탭 전환 ──
+function switchTab(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  const tabs = ['dash','upload','strategy','cumul','data'];
+  document.querySelectorAll('.tab-item')[tabs.indexOf(id)].classList.add('active');
+  if (id === 'strategy') renderStrategy();
+  if (id === 'cumul') renderCumul();
+  if (id === 'data') renderAllData();
+  if (id === 'dash') renderDash();
+}
+
+// ── 지사 선택 ──
+function selectBranch(btn) {
+  document.querySelectorAll('.branch-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedBranch = btn.dataset.branch;
+  checkReady();
+}
+
+// ── 파일 처리 ──
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f) handleFile(f);
+}
+function handleFile(f) {
+  if (!f) return;
+  if (!/\.(xls|xlsx)$/i.test(f.name)) { showToast('❌ .xls 또는 .xlsx 파일만 가능합니다'); return; }
+  selectedFile = f;
+  document.getElementById('fileInfo').classList.add('show');
+  document.getElementById('fiName').textContent = f.name;
+  document.getElementById('fiSize').textContent = (f.size / 1024).toFixed(0) + 'KB';
+  checkReady();
+}
+function clearFile() {
+  selectedFile = null;
+  document.getElementById('fileInfo').classList.remove('show');
+  document.getElementById('fileInput').value = '';
+  checkReady();
+}
+function checkReady() {
+  const ok = selectedBranch && selectedFile &&
+    document.getElementById('selYear').value &&
+    document.getElementById('selMonth').value;
+  document.getElementById('btnAnalyze').disabled = !ok;
+}
+document.getElementById('selYear').addEventListener('change', checkReady);
+document.getElementById('selMonth').addEventListener('change', checkReady);
+
+// ── 분석 시작 ──
+async function startAnalysis() {
+  const year = document.getElementById('selYear').value;
+  const month = document.getElementById('selMonth').value;
+  document.getElementById('progressCard').style.display = 'block';
+  document.getElementById('mappingResult').classList.remove('show');
+  document.getElementById('previewCard').classList.remove('show');
+  document.getElementById('btnAnalyze').disabled = true;
+
+  setStep(1,'active','파일 읽는 중...');
+  setStep(2,'','대기 중'); setStep(3,'','대기 중'); setStep(4,'','대기 중');
+
+  try {
+    const buf = await selectedFile.arrayBuffer();
+    const wb = XLSX.read(buf, {type:'array'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+    setStep(1,'done', raw.length + '행 읽기 완료');
+
+    setStep(2,'active','노란색 컬럼 추출 중...');
+    await delay(300);
+    const rows = [];
+    for (let r = 1; r < raw.length; r++) {
+      const row = raw[r];
+      if (!row || row.every(v => v === '' || v === null)) continue;
+      const obj = { _지사: selectedBranch, _연도: year, _월: month, _연월: year + '-' + month.padStart(2,'0') };
+      YELLOW.forEach(col => {
+        obj[col.key] = row[col.idx] !== undefined ? String(row[col.idx]).trim() : '';
+      });
+      const dateVal = row[DATE_IDX];
+      obj._하불일자 = dateVal ? String(dateVal).substring(0, 10) : '';
+      obj['청구(원)'] = parseFloat(obj['청구(원)']) || 0;
+      obj['하불(원)'] = parseFloat(obj['하불(원)']) || 0;
+      obj['중량'] = parseFloat(obj['중량']) || 0;
+      if (obj['협력사명']) rows.push(obj);
+    }
+    setStep(2,'done', rows.length + '건 추출');
+
+    setStep(3,'active','데이터 정제 중...');
+    await delay(300);
+    // 용역 정제
+    rows.forEach(r => {
+      const s = r['용역'];
+      if (/BULK|벌크|육송/i.test(s)) r['용역'] = '벌크운송';
+      else if (/컨테이너|container/i.test(s)) r['용역'] = '컨테이너운송';
+      else if (/도급/i.test(s)) r['용역'] = '도급';
+      else if (/하역/i.test(s)) r['용역'] = '하역';
+      else if (/장비|지게차|크레인/i.test(s)) r['용역'] = '장비';
+      else if (!s) r['용역'] = '기타';
+    });
+    setStep(3,'done','정제 완료');
+
+    setStep(4,'active','집계 준비 중...');
+    await delay(300);
+    pendingData = rows;
+    setStep(4,'done','반영 준비 완료');
+
+    // 매핑 결과 표시
+    const tbody = document.getElementById('mappingBody');
+    tbody.innerHTML = YELLOW.map(col => `
+      <tr>
+        <td><span class="badge badge-mint">${col.key}</span></td>
+        <td style="color:var(--text2);font-size:11px">원본 컬럼 ${col.idx+1}번째</td>
+        <td><span class="badge badge-green">✓ 추출</span></td>
+      </tr>`).join('');
+
+    const totCharge = rows.reduce((s,r) => s + r['청구(원)'], 0);
+    const totHabul = rows.reduce((s,r) => s + r['하불(원)'], 0);
+    document.getElementById('extractCnt').textContent = rows.length + '건';
+    document.getElementById('extractCharge').textContent = fmt만(totCharge);
+    document.getElementById('extractHabul').textContent = fmt만(totHabul);
+    document.getElementById('mappingResult').classList.add('show');
+
+    // 미리보기
+    buildPreviewTable(rows.slice(0, 20));
+    document.getElementById('previewCard').classList.add('show');
+
+    // 배너
+    document.getElementById('bannerCnt').textContent = rows.length + '건';
+    document.getElementById('reflectBanner').classList.add('show');
+    document.getElementById('btnAnalyze').disabled = false;
+
+  } catch(e) {
+    setStep(1,'error','오류: ' + e.message);
+    document.getElementById('btnAnalyze').disabled = false;
+    showToast('❌ 파일 읽기 오류: ' + e.message);
+  }
+}
+
+function buildPreviewTable(rows) {
+  const keys = ['_지사','_연월','협력사명','고객(화주)','용역','톤급','중량','청구(원)','하불(원)','출발지','도착지'];
+  const labels = ['지사','연월','협력사명','고객(화주)','용역','톤급','중량(MT)','청구(원)','하불(원)','출발지','도착지'];
+  const numKeys = ['중량','청구(원)','하불(원)'];
+  document.getElementById('previewTable').innerHTML =
+    `<thead><tr>${labels.map(l=>`<th>${l}</th>`).join('')}</tr></thead>
+     <tbody>${rows.map(r=>`<tr>${keys.map(k=>`<td class="${numKeys.includes(k)?'num':''}">${numKeys.includes(k)?Number(r[k]).toLocaleString():r[k]||''}</td>`).join('')}</tr>`).join('')}</tbody>`;
+}
+
+// ── 반영 ──
+function reflectData() {
+  if (!pendingData.length) return;
+  allData = [...allData, ...pendingData];
+  pendingData = [];
+  closeBanner();
+  populateFilters();
+  renderDash();
+  showToast('✅ ' + allData.length + '건 반영 완료');
+  setTimeout(() => switchTab('dash'), 600);
+}
+function closeBanner() { document.getElementById('reflectBanner').classList.remove('show'); }
+
+// ── 대시보드 ──
+function renderDash() {
+  if (!allData.length) {
+    document.getElementById('dashEmpty').style.display = 'block';
+    document.getElementById('dashContent').style.display = 'none';
+    document.getElementById('kpi-total').textContent = '0건';
+    document.getElementById('kpi-period').textContent = '데이터 없음';
+    ['kpi-habul','kpi-charge','kpi-ratio'].forEach(id => document.getElementById(id).textContent = '—');
+    return;
+  }
+  const totH = allData.reduce((s,r) => s + r['하불(원)'], 0);
+  const totC = allData.reduce((s,r) => s + r['청구(원)'], 0);
+  const months = [...new Set(allData.map(r => r._연월))].sort();
+  document.getElementById('kpi-total').textContent = allData.length.toLocaleString() + '건';
+  document.getElementById('kpi-period').textContent = months[0] + ' ~ ' + months[months.length-1];
+  document.getElementById('kpi-habul').textContent = fmt만(totH);
+  document.getElementById('kpi-habul-sub').textContent = totH >= 1e8 ? fmt억(totH) : '';
+  document.getElementById('kpi-charge').textContent = fmt만(totC);
+  document.getElementById('kpi-ratio').textContent = totC ? Math.round(totH/totC*1000)/10 + '%' : '—';
+
+  document.getElementById('dashEmpty').style.display = 'none';
+  document.getElementById('dashContent').style.display = 'flex';
+
+  // 월별 차트
+  const mMap = {};
+  allData.forEach(r => {
+    const m = r._연월;
+    if (!mMap[m]) mMap[m] = {charge:0, habul:0};
+    mMap[m].charge += r['청구(원)']; mMap[m].habul += r['하불(원)'];
+  });
+  const mLabels = Object.keys(mMap).sort();
+  if (chartMonth) chartMonth.destroy();
+  chartMonth = new Chart(document.getElementById('chartMonth'), {
+    type:'line',
+    data:{labels:mLabels,datasets:[
+      {label:'청구',data:mLabels.map(m=>Math.round(mMap[m].charge)),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.08)',tension:.3,fill:true,borderWidth:2,pointRadius:3},
+      {label:'하불',data:mLabels.map(m=>Math.round(mMap[m].habul)),borderColor:'#00b8a9',backgroundColor:'rgba(0,184,169,.08)',tension:.3,fill:true,borderWidth:2,pointRadius:3}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{font:{size:11},boxWidth:10}}},scales:{x:{ticks:{font:{size:10}},grid:{display:false}},y:{ticks:{font:{size:10},callback:v=>fmt만(v)},grid:{color:'rgba(0,0,0,.05)'}}}}
+  });
+
+  // 협력사 TOP10
+  const pMap = {};
+  allData.forEach(r => { if (!pMap[r['협력사명']]) pMap[r['협력사명']]=0; pMap[r['협력사명']] += r['하불(원)']; });
+  const pTop = Object.entries(pMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  if (chartPartner) chartPartner.destroy();
+  chartPartner = new Chart(document.getElementById('chartPartner'), {
+    type:'bar',
+    data:{labels:pTop.map(([k])=>k.length>10?k.substring(0,10)+'…':k),datasets:[{label:'하불액',data:pTop.map(([,v])=>Math.round(v)),backgroundColor:'rgba(0,184,169,.7)',borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10},callback:v=>fmt만(v)},grid:{color:'rgba(0,0,0,.05)'}},y:{ticks:{font:{size:10}},grid:{display:false}}}}
+  });
+
+  // 화주 TOP10
+  const cMap = {};
+  allData.forEach(r => { if (!cMap[r['고객(화주)']]) cMap[r['고객(화주)']]=0; cMap[r['고객(화주)']] += r['하불(원)']; });
+  const cTop = Object.entries(cMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  if (chartCustomer) chartCustomer.destroy();
+  chartCustomer = new Chart(document.getElementById('chartCustomer'), {
+    type:'bar',
+    data:{labels:cTop.map(([k])=>k.length>10?k.substring(0,10)+'…':k),datasets:[{label:'하불액',data:cTop.map(([,v])=>Math.round(v)),backgroundColor:'rgba(59,130,246,.7)',borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10},callback:v=>fmt만(v)},grid:{color:'rgba(0,0,0,.05)'}},y:{ticks:{font:{size:10}},grid:{display:false}}}}
+  });
+}
+
+// ── 구매전략지표 ──
+function setStrategyGroup(btn) {
+  document.querySelectorAll('.group-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  strategyGroup = btn.dataset.group;
+  renderStrategy();
+}
+function renderStrategy() {
+  const filtered = filterData('sf');
+  if (!filtered.length) {
+    document.getElementById('strategyEmpty').style.display = 'block';
+    document.getElementById('strategyContent').style.display = 'none';
+    return;
+  }
+  document.getElementById('strategyEmpty').style.display = 'none';
+  document.getElementById('strategyContent').style.display = 'flex';
+
+  const groupKey = {partner:'협력사명', customer:'고객(화주)', service:'용역', ton:'톤급'}[strategyGroup];
+  const titleMap = {partner:'협력사별', customer:'화주별', service:'용역별', ton:'톤급별'};
+  document.getElementById('strategyTitle').innerHTML = `<span class="icon">📋</span> ${titleMap[strategyGroup]} 구매전략지표`;
+
+  const map = {};
+  filtered.forEach(r => {
+    const k = r[groupKey] || '(미분류)';
+    if (!map[k]) map[k] = {key:k, cnt:0, charge:0, habul:0, weight:0};
+    map[k].cnt++; map[k].charge += r['청구(원)']; map[k].habul += r['하불(원)']; map[k].weight += r['중량'];
+  });
+  const rows = Object.values(map).sort((a,b) => b.habul - a.habul);
+  const tot = rows.reduce((s,r) => ({cnt:s.cnt+r.cnt,charge:s.charge+r.charge,habul:s.habul+r.habul,weight:s.weight+r.weight}), {cnt:0,charge:0,habul:0,weight:0});
+
+  const th = `<thead><tr>
+    <th>${titleMap[strategyGroup]}</th>
+    <th class="num">건수</th>
+    <th class="num">청구액(원)</th>
+    <th class="num">하불액(원)</th>
+    <th class="num">중량(MT)</th>
+    <th class="num">하불률</th>
+    <th class="num">건당하불</th>
+  </tr></thead>`;
+  const tb = `<tbody>
+    ${rows.map(r => `<tr>
+      <td style="font-weight:600">${r.key}</td>
+      <td class="num">${r.cnt.toLocaleString()}</td>
+      <td class="num">${Math.round(r.charge).toLocaleString()}</td>
+      <td class="num">${Math.round(r.habul).toLocaleString()}</td>
+      <td class="num">${Math.round(r.weight*10)/10}</td>
+      <td class="num">${r.charge?Math.round(r.habul/r.charge*1000)/10:0}%</td>
+      <td class="num">${r.cnt?Math.round(r.habul/r.cnt).toLocaleString():0}</td>
+    </tr>`).join('')}
+    <tr>
+      <td>합 계</td>
+      <td class="num">${tot.cnt.toLocaleString()}</td>
+      <td class="num">${Math.round(tot.charge).toLocaleString()}</td>
+      <td class="num">${Math.round(tot.habul).toLocaleString()}</td>
+      <td class="num">${Math.round(tot.weight*10)/10}</td>
+      <td class="num">${tot.charge?Math.round(tot.habul/tot.charge*1000)/10:0}%</td>
+      <td class="num">${tot.cnt?Math.round(tot.habul/tot.cnt).toLocaleString():0}</td>
+    </tr>
+  </tbody>`;
+  document.getElementById('strategyTable').innerHTML = th + tb;
+}
+
+// ── 누계·분석 ──
+function renderCumul() {
+  const filtered = filterData('cf');
+  const months = [...new Set(allData.map(r => r._연월))].sort();
+  populateCumulFilters();
+
+  if (!filtered.length) {
+    document.getElementById('cumulEmpty').style.display = 'block';
+    document.getElementById('cumulContent').style.display = 'none';
+    ['ck-habul','ck-charge','ck-avg','ck-ratio'].forEach(id => document.getElementById(id).textContent = '—');
+    return;
+  }
+
+  const mMap = {};
+  filtered.forEach(r => {
+    const m = r._연월;
+    if (!mMap[m]) mMap[m] = {월:m, cnt:0, charge:0, habul:0};
+    mMap[m].cnt++; mMap[m].charge += r['청구(원)']; mMap[m].habul += r['하불(원)'];
+  });
+  const mRows = Object.values(mMap).sort((a,b) => a.월.localeCompare(b.월));
+  let cumC=0, cumH=0, cumN=0;
+  const withCumul = mRows.map(m => { cumC+=m.charge; cumH+=m.habul; cumN+=m.cnt; return {...m,cumC,cumH,cumN}; });
+  const last = withCumul[withCumul.length-1] || {};
+  const avgH = mRows.length ? Math.round(mRows.reduce((s,m)=>s+m.habul,0)/mRows.length) : 0;
+
+  document.getElementById('ck-habul').textContent = fmt만(last.cumH||0);
+  document.getElementById('ck-charge').textContent = fmt만(last.cumC||0);
+  document.getElementById('ck-avg').textContent = fmt만(avgH);
+  document.getElementById('ck-months').textContent = mRows.length + '개월 기준';
+  document.getElementById('ck-period').textContent = mRows.length ? mRows[0].월+'~'+mRows[mRows.length-1].월 : '—';
+  document.getElementById('ck-ratio').textContent = last.cumC ? Math.round(last.cumH/last.cumC*1000)/10 + '%' : '—';
+
+  document.getElementById('cumulEmpty').style.display = 'none';
+  document.getElementById('cumulContent').style.display = 'flex';
+
+  // 차트
+  if (chartCumul) chartCumul.destroy();
+  chartCumul = new Chart(document.getElementById('chartCumul'), {
+    type:'line',
+    data:{labels:mRows.map(m=>m.월),datasets:[
+      {label:'청구',data:mRows.map(m=>Math.round(m.charge)),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.08)',tension:.3,fill:true,borderWidth:1.5,pointRadius:3},
+      {label:'하불',data:mRows.map(m=>Math.round(m.habul)),borderColor:'#00b8a9',backgroundColor:'rgba(0,184,169,.08)',tension:.3,fill:true,borderWidth:1.5,pointRadius:3}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{font:{size:11},boxWidth:10}}},scales:{x:{ticks:{font:{size:10}},grid:{display:false}},y:{ticks:{font:{size:10},callback:v=>fmt만(v)},grid:{color:'rgba(0,0,0,.05)'}}}}
+  });
+
+  // 누계 테이블
+  document.getElementById('cumulTable').innerHTML =
+    `<thead><tr><th>월</th><th class="num">건수</th><th class="num">청구액</th><th class="num">하불액</th><th class="num">하불률</th><th class="num">누계청구</th><th class="num">누계하불</th></tr></thead>
+     <tbody>${withCumul.map(m=>`<tr>
+       <td style="font-weight:600">${m.월}</td>
+       <td class="num">${m.cnt.toLocaleString()}</td>
+       <td class="num">${Math.round(m.charge).toLocaleString()}</td>
+       <td class="num">${Math.round(m.habul).toLocaleString()}</td>
+       <td class="num">${m.charge?Math.round(m.habul/m.charge*1000)/10:0}%</td>
+       <td class="num cumul-highlight">${Math.round(m.cumC).toLocaleString()}</td>
+       <td class="num cumul-highlight">${Math.round(m.cumH).toLocaleString()}</td>
+     </tr>`).join('')}</tbody>`;
+}
+
+// ── 전체 데이터 ──
+function renderAllData() {
+  const filtered = filterData('df');
+  document.getElementById('dataCount').textContent = '전체 ' + filtered.length + '건';
+  if (!filtered.length) {
+    document.getElementById('dataEmpty').style.display = 'block';
+    document.getElementById('dataContent').style.display = 'none';
+    return;
+  }
+  document.getElementById('dataEmpty').style.display = 'none';
+  document.getElementById('dataContent').style.display = 'block';
+  const show = filtered.slice(0, 300);
+  const keys = ['_지사','_연월','협력사명','고객(화주)','용역','톤급','청구(원)','하불(원)'];
+  const labels = ['지사','연월','협력사명','고객(화주)','용역','톤급','청구(원)','하불(원)'];
+  document.getElementById('allDataTable').innerHTML =
+    `<thead><tr>${labels.map(l=>`<th>${l}</th>`).join('')}<th>삭제</th></tr></thead>
+     <tbody>${show.map((r,i)=>`<tr>
+       ${keys.map(k=>`<td class="${['청구(원)','하불(원)'].includes(k)?'num':''}">${['청구(원)','하불(원)'].includes(k)?Number(r[k]).toLocaleString():r[k]||''}</td>`).join('')}
+       <td><button class="del-btn" onclick="deleteRow('${r._지사}','${r._연월}','${r['협력사명']}')">삭제</button></td>
+     </tr>`).join('')}
+     ${filtered.length>300?`<tr><td colspan="9" style="text-align:center;color:var(--text3);font-size:11px">상위 300건 표시 중 (전체 ${filtered.length}건)</td></tr>`:''}</tbody>`;
+}
+
+function deleteRow(branch, ym, partner) {
+  const idx = allData.findIndex(r => r._지사===branch && r._연월===ym && r['협력사명']===partner);
+  if (idx > -1) { allData.splice(idx, 1); renderAllData(); showToast('🗑 1건 삭제됨'); }
+}
+function deleteFiltered() {
+  if (!confirm('필터된 데이터를 모두 삭제할까요?')) return;
+  const filtered = filterData('df');
+  const set = new Set(filtered.map(r => JSON.stringify({b:r._지사,y:r._연도,m:r._월})));
+  const before = allData.length;
+  allData = allData.filter(r => !set.has(JSON.stringify({b:r._지사,y:r._연도,m:r._월})));
+  renderAllData(); renderDash();
+  showToast('🗑 ' + (before - allData.length) + '건 삭제됨');
+}
+
+// ── 필터 공통 ──
+function filterData(prefix) {
+  const branch = document.getElementById(prefix+'-branch')?.value || '';
+  const year = document.getElementById(prefix+'-year')?.value || '';
+  const month = document.getElementById(prefix+'-month')?.value || '';
+  const partner = document.getElementById(prefix+'-partner')?.value || '';
+  const customer = document.getElementById(prefix+'-customer')?.value || '';
+  return allData.filter(r =>
+    (!branch || r._지사===branch) &&
+    (!year || r._연도===year) &&
+    (!month || r._월===month) &&
+    (!partner || r['협력사명']===partner) &&
+    (!customer || r['고객(화주)']=== customer)
+  );
+}
+
+function populateFilters() {
+  const partners = [...new Set(allData.map(r=>r['협력사명']).filter(Boolean))].sort();
+  const customers = [...new Set(allData.map(r=>r['고객(화주)']).filter(Boolean))].sort();
+  ['df-partner','cf-partner'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const cur = el.value;
+    el.innerHTML = '<option value="">전체 협력사</option>' + partners.map(p=>`<option${p===cur?' selected':''}>${p}</option>`).join('');
+  });
+  ['cf-customer'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = '<option value="">전체 화주</option>' + customers.map(c=>`<option>${c}</option>`).join('');
+  });
+}
+function populateCumulFilters() { populateFilters(); }
+
+// ── 내보내기 ──
+function exportStrategyCSV() {
+  const filtered = filterData('sf');
+  if (!filtered.length) { showToast('❌ 데이터 없음'); return; }
+  const groupKey = {partner:'협력사명',customer:'고객(화주)',service:'용역',ton:'톤급'}[strategyGroup];
+  const map = {};
+  filtered.forEach(r => {
+    const k = r[groupKey]||'(미분류)';
+    if (!map[k]) map[k]={key:k,cnt:0,charge:0,habul:0,weight:0};
+    map[k].cnt++;map[k].charge+=r['청구(원)'];map[k].habul+=r['하불(원)'];map[k].weight+=r['중량'];
+  });
+  const rows = Object.values(map).sort((a,b)=>b.habul-a.habul);
+  const header = [groupKey,'건수','청구액(원)','하불액(원)','중량(MT)','하불률(%)','건당하불(원)'];
+  const data = rows.map(r=>[r.key,r.cnt,Math.round(r.charge),Math.round(r.habul),Math.round(r.weight*10)/10,r.charge?Math.round(r.habul/r.charge*1000)/10:0,r.cnt?Math.round(r.habul/r.cnt):0]);
+  downloadCSV([header,...data],'구매전략지표_'+strategyGroup+'_'+today()+'.csv');
+}
+function exportCumulCSV() {
+  const filtered = filterData('cf');
+  if (!filtered.length) { showToast('❌ 데이터 없음'); return; }
+  const mMap = {};
+  filtered.forEach(r => {
+    const m=r._연월;
+    if (!mMap[m]) mMap[m]={월:m,cnt:0,charge:0,habul:0};
+    mMap[m].cnt++;mMap[m].charge+=r['청구(원)'];mMap[m].habul+=r['하불(원)'];
+  });
+  let cC=0,cH=0,cN=0;
+  const rows = Object.values(mMap).sort((a,b)=>a.월.localeCompare(b.월)).map(m=>{cC+=m.charge;cH+=m.habul;cN+=m.cnt;return[m.월,m.cnt,Math.round(m.charge),Math.round(m.habul),m.charge?Math.round(m.habul/m.charge*1000)/10:0,Math.round(cC),Math.round(cH),cN];});
+  downloadCSV([['월','건수','청구액','하불액','하불률(%)','누계청구','누계하불','누계건수'],...rows],'누계분석_'+today()+'.csv');
+}
+function exportAllCSV() {
+  const filtered = filterData('df');
+  if (!filtered.length) { showToast('❌ 데이터 없음'); return; }
+  const keys = ['_지사','_연도','_월','협력사명','고객(화주)','용역','톤급','중량','청구(원)','하불(원)','출발지','도착지','S/O명'];
+  downloadCSV([keys,...filtered.map(r=>keys.map(k=>r[k]||''))],'전체데이터_'+today()+'.csv');
+}
+function downloadCSV(rows, name) {
+  const bom = '\uFEFF';
+  const csv = bom + rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download = name; a.click();
+  showToast('⬇ ' + name + ' 저장됨');
+}
+
+// ── 유틸 ──
+function setStep(n, state, desc) {
+  const el = document.getElementById('prog'+n);
+  el.className = 'prog-step' + (state?' '+state:'');
+  document.getElementById('progDesc'+n).textContent = desc;
+  const dot = el.querySelector('.prog-dot');
+  dot.textContent = state==='done'?'✓':state==='error'?'✕':n;
+}
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+function fmt만(v) {
+  if (!v) return '—';
+  if (Math.abs(v) >= 1e8) return (Math.round(v/1e6)/100).toFixed(1) + '억';
+  return Math.round(v/10000).toLocaleString() + '만';
+}
+function fmt억(v) { return (Math.round(v/1e7)/10).toFixed(1) + '억'; }
+function today() { return new Date().toISOString().slice(0,10); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
